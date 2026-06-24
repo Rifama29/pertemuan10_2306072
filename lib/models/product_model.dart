@@ -5,12 +5,14 @@ class ProductModel {
   final String name;
   final String description;
   final int? price;
+  final String image;
 
 // constructor 
   ProductModel({
     required this.name,
     required this.description,
     required this.price,
+    required this.image,
   });
 
   
@@ -30,6 +32,7 @@ class ProductModel {
       name: map['name'] ?? '',
       description: map['description'] ?? '',
       price: map['price'] ?? 0,
+      image: map['image'] ?? ''
     );
   }
   

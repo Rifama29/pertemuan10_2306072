@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pertemuan10_2306072/models/product_model.dart';
-
+import 'dart:convert';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
@@ -40,12 +40,22 @@ class ProductCard extends StatelessWidget {
               const SizedBox(height: 5),
               Text("Rp ${product.price}"),
               const SizedBox(height: 5),
-              Text(product.description),
+              product.image.isNotEmpty
+                  ? Image.memory(
+                      base64Decode(product.image),
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(
+                      Icons.image,
+                      size: 120,
+                    ),
             ],
           ),
           leading: onEdit != null
               ? IconButton(
-                  icon: const Icon(Icons.edit, color: Color.fromARGB(255, 255, 196, 0)),
+                  icon: const Icon(Icons.edit, color: Colors.orange),
                   onPressed: onEdit,
                 )
               : null,
