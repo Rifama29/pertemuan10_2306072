@@ -35,8 +35,7 @@ class _ProductPageState extends State<ProductPage> {
 
   Future<void> saveProducts() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> productList =
-        products.map((item) => item.toJson()).toList();
+    List<String> productList = products.map((item) => item.toJson()).toList();
     await prefs.setStringList('products', productList);
   }
 
@@ -62,48 +61,58 @@ class _ProductPageState extends State<ProductPage> {
       products.removeAt(index);
     });
     await saveProducts();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Produk berhasil dihapus")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Produk berhasil dihapus")));
   }
 
-  Future<String> convertImageToBase64(XFile image) async {
-    Uint8List imagebytes = await image.readAsBytes();
-    return base64Encode(imagebytes);
+  // method untuk convert gambar
+  Future<String> convertimageToBase64(XFile image) async {
+    Uint8List bytes = await image.readAsBytes();
+
+    return base64Encode(bytes);
   }
 
   void showForm({ProductModel? product, int? index}) {
-    TextEditingController nameController =
-        TextEditingController(text: product?.name ?? "");
-    TextEditingController descriptionController =
-        TextEditingController(text: product?.description ?? "");
-    TextEditingController priceController =
-        TextEditingController(text: product?.price.toString() ?? "");
-    TextEditingController imageController =
-        TextEditingController(text: product?.image ?? "");
+    TextEditingController nameController = TextEditingController(
+      text: product?.name ?? "",
+    );
+    TextEditingController descriptionController = TextEditingController(
+      text: product?.description ?? "",
+    );
+    TextEditingController priceController = TextEditingController(
+      text: product?.price.toString() ?? "",
+    );
+    TextEditingController imgController = TextEditingController(
+      text: product?.image ?? "",
+    );
 
     XFile? selectedImage;
     final ImagePicker picker = ImagePicker();
 
-    Future<void> pickImage() async {
-      final XFile? image =
-          await picker.pickImage(source: ImageSource.gallery);
+    // method untuk memilih gambar dari galeri
+    Future<void> pickImage(StateSetter setDialogState) async {
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image != null) {
-        selectedImage = image;
-        imageController.text = image.path;
+        setDialogState(() {
+          selectedImage = image;
+          imgController.text = image.path;
+        });
       }
     }
 
-    Widget buildPreviewImage() {
+    Widget previewImage() {
       if (selectedImage != null) {
         return FutureBuilder<Uint8List>(
           future: selectedImage!.readAsBytes(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
+              // loader ketika memilih gambar
               return const CircularProgressIndicator();
             }
 
+            // jika sudah loadir maka tampilkan gambar dari memory
             return Image.memory(
               snapshot.data!,
               width: 150,
@@ -113,8 +122,7 @@ class _ProductPageState extends State<ProductPage> {
           },
         );
       }
-
-      if ((product?.image.isNotEmpty ?? false)) {
+      if (product?.image.isNotEmpty ?? false) {
         return Image.memory(
           base64Decode(product!.image),
           width: 150,
@@ -122,7 +130,6 @@ class _ProductPageState extends State<ProductPage> {
           fit: BoxFit.cover,
         );
       }
-
       return const SizedBox.shrink();
     }
 
@@ -146,28 +153,22 @@ class _ProductPageState extends State<ProductPage> {
               decoration: const InputDecoration(labelText: "Harga"),
               keyboardType: TextInputType.number,
             ),
-
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 10),
             ElevatedButton.icon(
-              onPressed: () => pickImage(),
+              onPressed: () => pickImage(setState),
               icon: const Icon(Icons.image),
               label: const Text("Pilih Gambar"),
             ),
-
-            const SizedBox(height: 20),
-
-            buildPreviewImage(),
+            const SizedBox(height: 10),
+            previewImage(),
           ],
         ),
         actions: [
           ElevatedButton(
             onPressed: () async {
               String imageBase64 = product?.image ?? "";
-
               if (selectedImage != null) {
-                imageBase64 =
-                    await convertImageToBase64(selectedImage!);
+                imageBase64 = await convertimageToBase64(selectedImage!);
               }
 
               final newProduct = ProductModel(
@@ -176,13 +177,11 @@ class _ProductPageState extends State<ProductPage> {
                 price: int.tryParse(priceController.text) ?? 0,
                 image: imageBase64,
               );
-
               if (product == null) {
                 addProduct(newProduct);
               } else {
                 updateProduct(index!, newProduct);
               }
-
               Navigator.pop(context);
             },
             child: const Text("Simpan"),
@@ -198,20 +197,15 @@ class _ProductPageState extends State<ProductPage> {
       appBar: AppBar(
         title: Text(
           "Produk",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: const Color.fromARGB(255, 237, 237, 237), fontWeight: .bold),
         ),
-        backgroundColor: const Color.fromARGB(255, 9, 16, 201),
+        backgroundColor: const Color.fromARGB(255, 43, 1, 197),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.chevron_left,
-            color: Colors.white,
-          ),
+          icon: Icon(Icons.chevron_left, color: const Color.fromARGB(255, 251, 251, 251)),
         ),
       ),
+
       body: Container(
         margin: EdgeInsets.all(20),
         child: Column(
@@ -226,6 +220,8 @@ class _ProductPageState extends State<ProductPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            // Product list
             Expanded(
               child: products.isEmpty
                   ? const Center(child: Text("Belum ada produk"))
@@ -233,9 +229,11 @@ class _ProductPageState extends State<ProductPage> {
                       itemCount: products.length,
                       itemBuilder: (context, index) {
                         final product = products[index];
-
                         return ProductCard(
                           product: product,
+                          onDelete: () => deleteProduct(index),
+                          onEdit: () =>
+                              showForm(product: product, index: index),
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -243,15 +241,6 @@ class _ProductPageState extends State<ProductPage> {
                                   ProductDetailPage(products: product),
                             ),
                           ),
-                          onEdit: () {
-                            showForm(
-                              product: product,
-                              index: index,
-                            );
-                          },
-                          onDelete: () {
-                            deleteProduct(index);
-                          },
                         );
                       },
                     ),
